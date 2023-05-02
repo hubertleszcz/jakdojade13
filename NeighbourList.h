@@ -37,7 +37,7 @@ public:
 
 		elements++;
 	}
-	void PrintNodes(int a) {
+	void PrintNodes(int a) const{
 		RoadNode* currnode = start;
 		while (currnode != nullptr) {
 			std::cout << "From " << a << " to " << currnode->to << " length " << currnode->length << std::endl;
@@ -45,7 +45,7 @@ public:
 		}
 	}
 
-	RoadNode* GetNode(int i) {
+	RoadNode* GetNode(int i) const{
 		RoadNode* currnode = start;
 		for (int j = 0; j < i; j++) {
 			currnode = currnode->next;
@@ -53,8 +53,23 @@ public:
 		return currnode;
 	}
 
-	int GetSize() {
+	int GetSize() const{
 		return elements;
+	}
+
+	void MemoryFree() {
+		RoadNode* currnode = start;
+		while (currnode != nullptr) {
+			RoadNode* nextone = currnode->next;
+			delete currnode;
+			currnode = nextone;
+		}
+		elements = 0;
+		start = nullptr;
+		end = nullptr;
+	}
+	~NeighbourhoodList() {
+	
 	}
 };
 
@@ -64,11 +79,14 @@ struct TownNode {
 	int length;
 	TownNode* next;
 	TownNode() {
-
+		this->to = 0;
+		this->length = 0;
+		this->next = nullptr;
 	}
-	TownNode(int to, int lenght) {
+	TownNode(int to, int length) {
 		this->to = to;
 		this->length = length;
+		this->next = nullptr;
 	}
 };
 
@@ -102,7 +120,7 @@ public:
 		elements++;
 	}
 
-	TownNode* GetNode(int i) {
+	TownNode* GetNode(int i) const{
 		TownNode* currnode = start;
 		for (int j = 0; j < i; j++) {
 			currnode = currnode->next;
@@ -110,7 +128,21 @@ public:
 		return currnode;
 	}
 
-	int GetSize() {
+	int GetSize() const{
 		return elements;
+	}
+	void MemoryFree() {
+		TownNode* currnode = start;
+		while (currnode != nullptr) {
+			TownNode* nextnode = currnode->next;
+			delete currnode;
+			currnode = nextnode;
+		}
+		elements = 0;
+		start = nullptr;
+		end = nullptr;
+	}
+	~TownNeighbourhoodList() {
+	
 	}
 };

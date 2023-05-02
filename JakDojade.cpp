@@ -25,13 +25,13 @@ struct Basics {
 void CreateMap(char** Map, Basics& basics, RoadVortex* roads, int** Ids) {
     int current = 0;
     for(int i = 0; i < basics.height * basics.width; i++) {
-        char c = getchar();
+        int c = getchar();
         if (c == '\n') {
             i--;
             continue;
         }
         else {
-            Map[i / basics.width][i % basics.width] = c;
+            Map[i / basics.width][i % basics.width] = (char)c;
 
             if (Map[i / basics.width][i % basics.width] == '#' || Map[i / basics.width][i % basics.width] == '*') {
                 Ids[i / basics.width][i % basics.width] = current;
@@ -54,14 +54,14 @@ void CreateMap(char** Map, Basics& basics, RoadVortex* roads, int** Ids) {
     }
 }
 
-void MemoryFree(char** Map, int height, Vortex* towns, int townscounter) {
+void MemoryFree(char** Map, int height, int** Ids) {
     for (int i = 0; i < height; i++) {
         delete[] Map[i];
+        delete[] Ids[i];
     }
     delete[] Map;
-    for (int i = 0; i < townscounter; i++) {
-        delete[] towns[i].name;
-    }
+    delete[] Ids;
+
 }
 
 bool IsValid(char x) {
@@ -78,7 +78,7 @@ void reverse(char* str) {
     }
 }
 
-char* FindInAdjacentRow(char* row, int i, int j, Basics basics) {
+char* FindInAdjacentRow(char* row, int j, Basics basics) {
     int right = j + 1;
     int left = j - 1;
     int index = 0;
@@ -178,15 +178,16 @@ void FindTown(char** Map, int i, int j, Basics basics, char*& name) {
         if (up >= 0 && (IsValid(Map[up][j]) ||
            (left >= 0 && IsValid(Map[up][left])) ||
            (right < basics.width && IsValid(Map[up][right])))) {
-                strcpy(name,FindInAdjacentRow(Map[up], i, j, basics));
+                strcpy(name,FindInAdjacentRow(Map[up], j, basics));
         }
         else if (down < basics.height && (IsValid(Map[down][j]) ||
             (left >= 0 && IsValid(Map[down][left])) || 
             (right < basics.width && IsValid(Map[down][right])))) {
-                strcpy(name, FindInAdjacentRow(Map[down], i, j, basics));
+                strcpy(name, FindInAdjacentRow(Map[down], j, basics));
         }
     }
 }
+
 void TownFinder(char** Map, Vortex* towns, Basics basics, HashTable hash) {
     int visited_towns = 0;
     for (int i = 0; i <basics.height; i++) {
@@ -197,7 +198,7 @@ void TownFinder(char** Map, Vortex* towns, Basics basics, HashTable hash) {
                 towns[visited_towns].pos_x = j;
                 towns[visited_towns].pos_y = i;
                 FindTown(Map, i, j, basics, towns[visited_towns].name);
-               // hash.AddNewElement(towns[visited_towns]);
+                hash.AddNewElement(towns[visited_towns].name,towns[visited_towns].id);
                 visited_towns++;
             }
         }
@@ -208,7 +209,7 @@ void TownFinder(char** Map, Vortex* towns, Basics basics, HashTable hash) {
 }
 
 
-int BFS(Vortex* towns, RoadVortex* roads, Basics basics, int start, int to) {
+int BFS( RoadVortex* roads, Basics basics, int start, int to) {
     for (int i = 0; i < basics.road_cells; i++) {
         roads[i].visited = false;
         roads[i].dist = INF;
@@ -248,71 +249,71 @@ int BFS(Vortex* towns, RoadVortex* roads, Basics basics, int start, int to) {
 
 
 void RoadFinder(char** Map, Vortex* towns, Basics basics, RoadVortex* roads, int** Ids) {
-    int* tmp_town_indexes = new int[basics.town_counter];
-    int current = 0;
-   
-    int visited_roads = 0;
-    int visited_towns = 0;
-    for (int i = 0; i < basics.height; i++) {
-        for (int j = 0; j < basics.width; j++) {
-            if (Map[i][j] == '#' || Map[i][j]=='*') {
-                if (i > 0 && (Map[i - 1][j] == '*' || Map[i - 1][j] == '#')) {
-                    roads[visited_roads].roadneighbours.AddNewNode(Ids[i-1][j], BASIC_DISTANCE);
-                }
-                if (j > 0 && (Map[i][j - 1] == '*' || Map[i][j - 1] == '#')) {
-                    roads[visited_roads].roadneighbours.AddNewNode(Ids[i][j-1], BASIC_DISTANCE);
+    int* tmp_town_indexes = new int[basics.town_counter]; 
+    
+    if (basics.road_cells - basics.town_counter > 0) {
+        int visited_roads = 0;
+        int visited_towns = 0;
+        for (int i = 0; i < basics.height; i++) {
+            for (int j = 0; j < basics.width; j++) {
+                if (Map[i][j] == '#' || Map[i][j] == '*') {
+                    if (i > 0 && (Map[i - 1][j] == '*' || Map[i - 1][j] == '#')) {
+                        roads[visited_roads].roadneighbours.AddNewNode(Ids[i - 1][j], BASIC_DISTANCE);
+                    }
+                    if (j > 0 && (Map[i][j - 1] == '*' || Map[i][j - 1] == '#')) {
+                        roads[visited_roads].roadneighbours.AddNewNode(Ids[i][j - 1], BASIC_DISTANCE);
 
-                }
-                if (i < basics.height - 1 && (Map[i + 1][j] == '*' || Map[i + 1][j] == '#')) {
-                    roads[visited_roads].roadneighbours.AddNewNode(Ids[i+1][j], BASIC_DISTANCE);
-                }
-                if (j < basics.width - 1 && (Map[i][j + 1] == '*' || Map[i][j + 1] == '#')) {
-                    roads[visited_roads].roadneighbours.AddNewNode(Ids[i][j+1], BASIC_DISTANCE);
+                    }
+                    if (i < basics.height - 1 && (Map[i + 1][j] == '*' || Map[i + 1][j] == '#')) {
+                        roads[visited_roads].roadneighbours.AddNewNode(Ids[i + 1][j], BASIC_DISTANCE);
+                    }
+                    if (j < basics.width - 1 && (Map[i][j + 1] == '*' || Map[i][j + 1] == '#')) {
+                        roads[visited_roads].roadneighbours.AddNewNode(Ids[i][j + 1], BASIC_DISTANCE);
+                    }
+
+                    if (Map[i][j] == '*') {
+                        tmp_town_indexes[visited_towns++] = visited_roads;
+                    }
+
+                    visited_roads++;
                 }
 
-                if (Map[i][j] == '*') {
-                    tmp_town_indexes[visited_towns++] = visited_roads;
-                }
-
-                visited_roads++;
             }
-
+            if (visited_roads == basics.road_cells) break;
         }
-        if (visited_roads == basics.road_cells) break;
+        for (int i = 0; i < basics.town_counter; i++) {
+            if (roads[tmp_town_indexes[i]].roadneighbours.GetSize() > 0) {
+                for (int j = i + 1; j < basics.town_counter; j++) {
+                    int distance = BFS(roads, basics, tmp_town_indexes[i], tmp_town_indexes[j]);
+                    towns[i].neighbours.AddNewNode(j, distance);
+                    towns[j].neighbours.AddNewNode(i, distance);
+                }
+            }
+            towns[i].neighbours.AddNewNode(i, 0);
+        }
     }
-    for (int i = 0; i < basics.town_counter; i++) {
-        if (roads[tmp_town_indexes[i]].roadneighbours.GetSize() > 0) {
-            for (int j = i + 1; j < basics.town_counter; j++) {
-                int distance = BFS(towns, roads, basics, tmp_town_indexes[i], tmp_town_indexes[j]);
-                towns[i].neighbours.AddNewNode(j, distance);
-                towns[j].neighbours.AddNewNode(i, distance);
-            }
+    else {
+        for (int i = 0; i < basics.town_counter; i++) {
+            towns[i].neighbours.AddNewNode(i, 0);
         }
-        towns[i].neighbours.AddNewNode(i, 0);
     }
     delete[] tmp_town_indexes;
+
 }
 
 void CreateName(char* name) {
     int index = 0;
-    char c = getchar();
+    int c = getchar();
     while (c != ' '){ 
         if (c != '\n') {
-            name[index++] = c;
+            name[index++] = (char)c;
         }
         c = getchar();
     }
     name[index] = '\0';
 }
 
-int FindIndex(char* name, Vortex* towns, Basics basics) {
-    for (int i = 0; i < basics.town_counter; i++) {
-        if (!strcmp(name, towns[i].name)) {
-            return i;
-        }
-    }
-    return basics.town_counter;
-}
+
 void FlightsHandler(Vortex* towns, Basics basics, HashTable hash) {
     char* from = new char[basics.width];
     char* to = new char[basics.width];
@@ -321,11 +322,9 @@ void FlightsHandler(Vortex* towns, Basics basics, HashTable hash) {
     CreateName(to);
 
     cin >> length;
-    
-    index_from = FindIndex(from, towns, basics);
-    index_to = FindIndex(to, towns, basics);
-   /* index_from = hash.GetId(from, towns);
-    index_to = hash.GetId(to, towns);*/
+
+    index_from = hash.GetID(from, towns);
+    index_to = hash.GetID(to, towns);
 
 
     towns[index_from].neighbours.AddNewNode(index_to, length);
@@ -349,46 +348,25 @@ void OutputGenerator(int from, int to, int mode, Vortex* towns, Basics basics) {
         }
         visited[j] = false;
     }
-
     PriorityQueue p_queue = PriorityQueue(basics.town_counter);
     p_queue.AddNewElement(new TownNode(from, 0));
 
-    while (visited[to] == false && !p_queue.IsEmpty()) {
-        TownNode current_node = p_queue.GetShortest();
+    while (!p_queue.IsEmpty()) {
+        TownNode current_town = p_queue.GetShortest();
+        int current_vortex = current_town.to;
 
-        int current_vort = current_node.to;
+        if (visited[current_vortex]) continue;
 
-        if (visited[current_vort]) {
-            continue;
-        }
+        visited[current_vortex] = true;
 
-        visited[current_vort] = true;
-
-        for (int i = 0; i < towns[current_vort].neighbours.GetSize(); i++) {
-            int new_id = towns[current_vort].neighbours.GetNode(i)->to;
-            int new_dist = towns[current_vort].neighbours.GetNode(i)->length;
-            int distance = distances[current_vort] + new_dist;
-
-            if (distance < distances[new_id]) {
-                distances[new_id] = distance;
-                previous_towns[new_id] = current_vort;
+        for (int i = 0; i < towns[current_vortex].neighbours.GetSize(); i++) {
+            int new_distance = towns[current_vortex].neighbours.GetNode(i)->length;
+            int new_town_id = towns[current_vortex].neighbours.GetNode(i)->to;
+            if (distances[current_vortex] + new_distance < distances[new_town_id]) {
+                distances[new_town_id] = distances[current_vortex] + new_distance;
+                previous_towns[new_town_id] = current_vortex;
+                p_queue.AddNewElement(new TownNode(new_town_id, distances[new_town_id]));
             }
-        }
-
-        int next_vort = -1;
-        int next_dist = INF;
-        for (int i = 0; i < basics.town_counter; i++) {
-            if (visited[i]) {
-                continue;
-            }
-            if (distances[i] < next_dist) {
-                next_vort = i;
-                next_dist = distances[i];
-            }
-        }
-
-        if (next_vort != -1) {
-            p_queue.AddNewElement(new TownNode(next_vort, next_dist));
         }
     }
 
@@ -410,8 +388,9 @@ void OutputGenerator(int from, int to, int mode, Vortex* towns, Basics basics) {
         }
 
         for (int i = path_length - 1; i > 0; i--) {
-            cout << towns[path[i]].name << " ";
+            printf("%s ", towns[path[i]].name);
         }
+        delete[] path;
     }
 
     cout << "\n";
@@ -420,8 +399,87 @@ void OutputGenerator(int from, int to, int mode, Vortex* towns, Basics basics) {
     delete[] visited;
 }
 
+//void OutputGenerator(int from, int to, int mode, Vortex* towns, Basics basics) {
+//    int shortest_path = 0;
+//    int* distances = new int[basics.town_counter];
+//    int* previous_towns = new int[basics.town_counter];
+//    bool* visited = new bool[basics.town_counter];
+//    for (int j = 0; j < basics.town_counter; j++) {
+//        if (from == j) {
+//            distances[j] = 0;
+//        }
+//        else {
+//            distances[j] = INF;
+//        }
+//        visited[j] = false;
+//    }
+//
+//    PriorityQueue p_queue = PriorityQueue(basics.town_counter);
+//    p_queue.AddNewElement(new TownNode(from, 0));
+//
+//    while (!p_queue.IsEmpty()) {
+//        TownNode current_node = p_queue.GetShortest();
+//
+//        int current_vort = current_node.to;
+//
+//        visited[current_vort] = true;
+//
+//        for (int i = 0; i < towns[current_vort].neighbours.GetSize(); i++) {
+//            int new_id = towns[current_vort].neighbours.GetNode(i)->to;
+//            int new_dist = towns[current_vort].neighbours.GetNode(i)->length;
+//            int distance = distances[current_vort] + new_dist;
+//
+//            if (distance < distances[new_id]) {
+//                distances[new_id] = distance;
+//                previous_towns[new_id] = current_vort;
+//            }
+//        }
+//
+//        int next_vort = -1;
+//        int next_dist = INF;
+//        for (int i = 0; i < basics.town_counter; i++) {
+//            if (distances[i] < next_dist && !visited[i]) {
+//                next_vort = i;
+//                next_dist = distances[i];
+//            }
+//        }
+//
+//        if (next_vort != -1) { 
+//            p_queue.AddNewElement(new TownNode(next_vort, next_dist));
+//        }
+//    }
+//
+//    if (distances[to] == INF) {
+//        shortest_path = INF;
+//    }
+//    else {
+//        shortest_path = distances[to];
+//    }
+//    printf("%d ", shortest_path);
+//    if (mode) {
+//        int current_town = to;
+//        int* path = new int[basics.town_counter];
+//        int path_length = 0;
+//
+//        while (current_town != from) {
+//            path[path_length++] = current_town;
+//            current_town = previous_towns[current_town];
+//        }
+//
+//        for (int i = path_length - 1; i > 0; i--) {
+//            printf("%s ", towns[path[i]].name);
+//        }
+//        delete[] path;
+//    }
+//
+//    cout << "\n";
+//    delete[] previous_towns;
+//    delete[] distances;
+//    delete[] visited;
+//}
 
-void CommandsHandler(Vortex* towns, Basics basics) {
+
+void CommandsHandler(Vortex* towns, Basics basics, HashTable hash) {
     char* from = new char[basics.width];
     char* to = new char[basics.width];
     int mode, index_from, index_to;
@@ -430,8 +488,9 @@ void CommandsHandler(Vortex* towns, Basics basics) {
 
     cin >> mode;
 
-    index_from = FindIndex(from, towns, basics);
-    index_to = FindIndex(to, towns, basics);
+
+    index_from = hash.GetID(from, towns);
+    index_to = hash.GetID(to, towns);
 
     OutputGenerator(index_from, index_to, mode, towns, basics);
 
@@ -455,24 +514,32 @@ int main() {
     RoadVortex* roads = new RoadVortex[basics.width*basics.height];
 
     CreateMap(Map, basics, roads,Ids);
-    HashTable hash(2 * basics.town_counter);
+    HashTable hash(10200);
     Vortex* towns = new Vortex[basics.town_counter];
     TownFinder(Map, towns, basics, hash);
     RoadFinder(Map, towns, basics, roads, Ids);
-    
-    
+    for (int i = 0; i < basics.road_cells; i++) {
+        roads[i].roadneighbours.MemoryFree();
+    }
+    delete[] roads;
+    MemoryFree(Map, basics.height, Ids);
+
     cin >> flights;
     for (int i = 0; i < flights; i++) {
         FlightsHandler(towns, basics,hash);
     }
+
     cin >> commands;
+    
     for (int i = 0; i < commands; i++) {
-        CommandsHandler(towns, basics);
+        CommandsHandler(towns, basics, hash);
     }
 
-    MemoryFree(Map, basics.height, towns,basics.town_counter);
-
+    for (int i = 0; i < basics.town_counter; i++) {
+        delete[] towns[i].name;
+        towns[i].neighbours.MemoryFree();
+    }
     delete[] towns;
-    delete[] roads;
+    hash.Free();
     return 0;
 }

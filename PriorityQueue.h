@@ -8,13 +8,7 @@ private:
 	int counter;
 	int current;
 
-	void SwapIndexes(int index1, int index2) {
-		TownNode temp = data[index1];
-		data[index1] = data[index2];
-		data[index2] = temp;
-	}
-
-	void SwapNodes(TownNode* first, TownNode* second) {
+	static void SwapNodes(TownNode* first, TownNode* second) {
 		TownNode tmp = *first;
 		*first = *second;
 		*second = tmp;
@@ -30,6 +24,9 @@ private:
 		if (data[index].length < data[parent].length) {
 			SwapNodes(&data[index], &data[parent]);
 			Heapify(parent);
+		}
+		else {
+			return;
 		}
 	}
 
@@ -78,7 +75,7 @@ public:
 		ChildHeapify(0);
 		return next_one;
 	}
-	bool IsEmpty() {
+	bool IsEmpty() const{
 		return counter == 0;
 	}
 

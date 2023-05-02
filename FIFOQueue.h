@@ -18,13 +18,13 @@ private:
     int current;
     int counter;
 public:
-    FIFOQueue(int size) {
+    explicit FIFOQueue(int size) {
         this->size = size;
         data = new RoadVortex[size];
         current = 0;
         counter = 0;
     }
-    void AddNewElement(RoadVortex newelement) {
+    void AddNewElement(RoadVortex& newelement) {
         data[counter] = newelement;
         counter++;
     }
@@ -34,14 +34,14 @@ public:
         return next_one;
     }
 
-    bool IsAtTheEnd() {
+    bool IsAtTheEnd() const {
         if (counter == current) {
             return true;
         }
         return false;
     }
 
-    int GetSize() {
+    int GetSize() const {
         return counter;
     }
     ~FIFOQueue() {

@@ -2,7 +2,8 @@
 #include <string.h>
 using namespace std;
 
-
+#define HASHPRIME 31
+#define HASH 5381
 struct Vortex {
 	int id;
 	int pos_x;
@@ -15,63 +16,96 @@ struct TableNode {
 	int id;
 	TableNode* next;
 };
+
+class HashList {
+private:
+	TableNode* start;
+	TableNode* end;
+	int elements;
+public:
+	HashList() {
+		start = nullptr;
+		end = nullptr;
+		elements = 0;
+	}
+
+	void AddNewNode(int id) {
+		TableNode* newNode = new TableNode;
+		newNode->next = nullptr;
+		newNode->id = id;
+		if (start == nullptr) {
+			start = newNode;
+			end = newNode;
+		}
+		else {
+			end->next = newNode;
+			end = newNode;
+		}
+
+		elements++;
+	}
+	int GetSize() const{
+		return elements;
+	}
+	TableNode* GetStart() const{
+		return start;
+	}
+
+	void MemoryFree() {
+		TableNode* current = start;
+		while (current != nullptr) {
+		TableNode* tmp = current->next;
+		delete current;
+		current = tmp;
+	 }
+	}
+	~HashList() {
+		
+    }
+};
 class HashTable {
 private:
 	int size;
-	TableNode* Data;
+	HashList* Data;
 public:
 	HashTable() {
-
+		size = 0;
+		Data = nullptr;
 	}
-	HashTable(int a) {
+	explicit HashTable(int a) {
 		this->size = a;
-		Data = new TableNode[size];
+		Data = new HashList[a];
+	}
+
+	static unsigned int FNVHash(const char* str){
+		unsigned int hash = HASH;
+		for (unsigned int i = 0; i < strlen(str); i++) {
+			hash ^= unsigned int(str[i]);
+			hash *= HASHPRIME;
+		}
+		return hash;
+	}
+	void AddNewElement(const char* name, int id) {
+		const unsigned int hash = FNVHash(name) % size;
+		Data[hash].AddNewNode(id);
+	}
+	int GetID(const char* name, Vortex* towns) const {
+		const unsigned int hash = FNVHash(name) % size;
+		TableNode* current = Data[hash].GetStart();
+		while (current != nullptr) {
+			if (!strcmp(name, towns[current->id].name)) {
+				return current->id;
+			}
+			current = current->next;
+		}
+		return 0;
+	}
+	void Free() {
 		for (int i = 0; i < size; i++) {
-			Data[i].id=-1;
+			Data[i].MemoryFree();
 		}
+		delete[] Data;
 	}
-
-	void AddNewElement(Vortex town) {
-		int sum = 0;
-		for (int i = 0; i < strlen(town.name); i++) {
-			sum += (int)town.name[i];
-		}
-		int index = sum % size;
-
-		TableNode* newNode = new TableNode;
-		newNode->id = town.id;
-		newNode->next = nullptr;
-
-		if (Data[index].id == -1) {
-			Data[index].id = newNode->id;
-			Data[index].next = nullptr;
-		}
-		else {
-			TableNode current = Data[index];
-			while (current.next != nullptr) {
-				current.id = current.next->id;
-				current.next = current.next->next;
-			}
-			if (current.next != nullptr) {
-				current.id = current.next->id;
-				current.next = current.next->next;
-			}
-		}
+	~HashTable(){
 	}
-
-	int GetId(char* name, Vortex* towns) {
-		int sum = 0;
-		for (int i = 0; i < strlen(name); i++) {
-			sum += (int)name[i];
-		}
-		int index = sum % size;
-
-		TableNode current = Data[index];
-		while (towns[current.id].name != name && current.next!=nullptr) {
-			current.id = current.next->id;
-			current.next = current.next->next;
-		}
-		return current.id;
-	}
-
 };
